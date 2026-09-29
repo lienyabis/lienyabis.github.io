@@ -1,0 +1,683 @@
+/* ==========================================================================
+   Design tokens
+   Dark mode is the default look; a light theme is layered on top via
+   [data-theme="light"] so the toggle only swaps variables.
+   ========================================================================== */
+
+:root {
+  --bg-0: #04050a;
+  --bg-1: #080b14;
+
+  --text: #e9edf7;
+  --text-strong: #ffffff;
+  --muted: #949db4;
+
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --surface: rgba(255, 255, 255, 0.038);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-3: rgba(255, 255, 255, 0.1);
+
+  --accent: #7c5cff;
+  --accent-2: #22d3ee;
+  --accent-3: #ff4d6a;
+  --accent-soft: rgba(124, 92, 255, 0.16);
+
+  --gradient: linear-gradient(120deg, #7c5cff 0%, #22d3ee 55%, #7c5cff 100%);
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  --radius-sm: 10px;
+  --radius: 18px;
+  --radius-lg: 26px;
+
+  --shadow-sm: 0 10px 24px -18px rgba(0, 0, 0, 0.9);
+  --shadow: 0 26px 60px -30px rgba(0, 0, 0, 0.85);
+  --shadow-accent: 0 20px 50px -22px rgba(124, 92, 255, 0.55);
+
+  --header-h: 74px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg-0: #f5f6fb;
+  --bg-1: #eceffa;
+
+  --text: #131829;
+  --text-strong: #05070f;
+  --muted: #5c6683;
+
+  --line: rgba(15, 20, 40, 0.1);
+  --line-strong: rgba(15, 20, 40, 0.18);
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-2: rgba(255, 255, 255, 0.9);
+  --surface-3: rgba(15, 20, 40, 0.06);
+
+  --accent: #5b45e0;
+  --accent-2: #0891b2;
+  --accent-3: #e11d48;
+  --accent-soft: rgba(91, 69, 224, 0.12);
+
+  --shadow-sm: 0 10px 24px -20px rgba(20, 26, 50, 0.5);
+  --shadow: 0 26px 60px -34px rgba(20, 26, 50, 0.45);
+  --shadow-accent: 0 20px 50px -26px rgba(91, 69, 224, 0.4);
+
+  color-scheme: light;
+}
+
+/* ==========================================================================
+   Reset & base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--header-h);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.4s var(--ease), color 0.4s var(--ease);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+p {
+  color: var(--muted);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-0);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--accent), var(--accent-2));
+  border-radius: 99px;
+  border: 3px solid var(--bg-0);
+}
+
+/* ==========================================================================
+   Layout helpers & shared surfaces
+   ========================================================================== */
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: clamp(1.1rem, 4vw, 2.5rem);
+}
+
+.glass {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.35s var(--ease), transform 0.35s var(--ease),
+    box-shadow 0.35s var(--ease), background 0.35s var(--ease);
+}
+
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.14), transparent 45%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.card-pad {
+  padding: clamp(1.3rem, 2.5vw, 2rem);
+}
+
+.text-gradient {
+  background: var(--gradient);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-pan 9s ease-in-out infinite;
+}
+
+@keyframes gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.card-title {
+  font-size: 1.22rem;
+  margin-bottom: 0.35rem;
+}
+
+.card-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: 1rem;
+}
+
+.card-subtitle .icon {
+  color: var(--accent-2);
+}
+
+.card-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Spotlight highlight used by .spotlight cards (vars set from App.jsx) */
+.spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 0%),
+    rgba(124, 92, 255, 0.18),
+    transparent 62%
+  );
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+  pointer-events: none;
+}
+
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Reveal on scroll
+   ========================================================================== */
+
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-y, 26px), 0);
+  transition: opacity 0.75s var(--ease), transform 0.75s var(--ease);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* A surface that is also a reveal target keeps both transition sets, so the
+   entrance fade and the hover lift/glow can coexist on one element. */
+.glass.reveal {
+  transition: opacity 0.75s var(--ease), transform 0.75s var(--ease),
+    border-color 0.4s var(--ease), box-shadow 0.4s var(--ease), background 0.4s var(--ease);
+}
+
+/* ==========================================================================
+   Buttons, pills, badges
+   ========================================================================== */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.5rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease),
+    background 0.3s var(--ease), border-color 0.3s var(--ease), color 0.3s var(--ease);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-sm {
+  padding: 0.6rem 1.05rem;
+  font-size: 0.84rem;
+}
+
+.btn-primary {
+  background: var(--gradient);
+  background-size: 200% 100%;
+  color: #fff;
+  box-shadow: var(--shadow-accent);
+}
+
+.btn-primary:hover {
+  background-position: 100% 50%;
+}
+
+.btn-ghost {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--text-strong);
+  background: var(--accent-soft);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pulse-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+}
+
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid #34d399;
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.badge-green {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.badge-cyan {
+  color: var(--accent-2);
+  border-color: rgba(34, 211, 238, 0.35);
+}
+
+.badge-violet {
+  color: #a78bfa;
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.badge-amber {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Lists, chips, links
+   ========================================================================== */
+
+.check-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.check-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.check-list .icon {
+  margin-top: 0.32rem;
+  color: var(--accent-2);
+}
+
+.check-list.compact li {
+  font-size: 0.85rem;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.chip-list li {
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  transition: border-color 0.25s var(--ease), color 0.25s var(--ease),
+    transform 0.25s var(--ease);
+}
+
+.chip-list li:hover {
+  border-color: var(--accent);
+  color: var(--text-strong);
+  transform: translateY(-2px);
+}
+
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.tag-cloud li {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px dashed var(--line-strong);
+  font-size: 0.76rem;
+  color: var(--muted);
+  transition: border-color 0.25s var(--ease), color 0.25s var(--ease);
+}
+
+.tag-cloud li:hover {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+
+.mini-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mini-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px dashed var(--line);
+  font-size: 0.84rem;
+}
+
+.mini-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.mini-list span {
+  color: var(--muted);
+}
+
+.mini-list strong {
+  text-align: right;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent-2);
+  transition: color 0.25s var(--ease), gap 0.25s var(--ease);
+}
+
+.link:hover {
+  color: var(--accent);
+  gap: 0.6rem;
+}
+
+.link.is-muted {
+  color: var(--muted);
+  cursor: default;
+}
+
+/* ==========================================================================
+   Section headers
+   ========================================================================== */
+
+.section {
+  position: relative;
+  padding: clamp(4.5rem, 9vw, 8rem) 0;
+}
+
+.section-heading {
+  max-width: 680px;
+  margin-bottom: clamp(2.5rem, 5vw, 3.75rem);
+}
+
+.section-heading.align-center {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.eyebrow i {
+  width: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-2));
+}
+
+.section-heading.align-center .eyebrow i:first-child {
+  background: linear-gradient(90deg, transparent, var(--accent-2));
+}
+
+.section-title {
+  font-size: clamp(1.9rem, 4.2vw, 2.85rem);
+}
+
+.section-lead {
+  margin-top: 1rem;
+  font-size: 1rem;
+}
+
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+
+label {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 0.92rem;
+  transition: border-color 0.25s var(--ease), box-shadow 0.25s var(--ease),
+    background 0.25s var(--ease);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 75%, transparent);
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   Accessibility: reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

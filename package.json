@@ -1,0 +1,24 @@
+{
+  "name": "niel-portfolio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Dark-mode, animated React portfolio for Niel F. Sibay - PHP / Laravel Web Developer",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "logos": "node scripts/gen-tech-logos.mjs",
+    "predev": "npm run logos",
+    "prebuild": "npm run logos"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "simple-icons": "^16.33.0",
+    "vite": "^8.3.1"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  }
+}

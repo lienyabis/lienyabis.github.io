@@ -1,0 +1,348 @@
+/* ==========================================================================
+   Profile photo, tech logos and the places they appear.
+   Loaded last so these rules can extend the shared components in base.css,
+   sections.css and layout.css without editing them.
+   ========================================================================== */
+
+/* Brand marks ------------------------------------------------------------- */
+
+.tech-logo {
+  display: block;
+  flex-shrink: 0;
+}
+
+.tech-logo path {
+  fill: var(--logo-ink, currentColor);
+}
+
+/* Marks whose brand colour is too pale for the light theme swap to the dark
+   variant of their ink (see techAliases.js). */
+[data-theme='light'] .tech-logo path {
+  fill: var(--logo-ink-light, var(--logo-ink, currentColor));
+}
+
+.tech-logo.is-neutral {
+  opacity: 0.7;
+}
+
+/* Chips (project + experience stacks) ------------------------------------- */
+
+.chip-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chip-list li .tech-logo {
+  opacity: 0.9;
+}
+
+/* Skill rows -------------------------------------------------------------- */
+
+.skill-row .skill-logo {
+  opacity: 0.95;
+  transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
+}
+
+.skill-row:hover .skill-logo {
+  transform: scale(1.14);
+}
+
+.skill-name {
+  flex: 1;
+}
+
+/* Code card footer -------------------------------------------------------- */
+
+.code-card-foot .badge {
+  color: var(--text);
+}
+
+.code-card-foot .tech-logo {
+  opacity: 0.9;
+}
+
+/* Tech marquee ------------------------------------------------------------ */
+
+.marquee-item {
+  gap: 0.7rem;
+}
+
+.marquee-item i {
+  margin-left: 0.5rem;
+}
+
+.marquee-item .tech-logo {
+  opacity: 0.85;
+  transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
+}
+
+.marquee-item:hover .tech-logo {
+  opacity: 1;
+  transform: scale(1.12);
+}
+
+/* Profile photo ----------------------------------------------------------- */
+
+.profile {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px);
+  margin: 0;
+}
+
+.profile-shot {
+  position: relative;
+  isolation: isolate;
+}
+
+.profile-img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  /* 44% keeps the eyes in the upper third of a square crop of the 1367x2047 photo. */
+  object-position: center 44%;
+  border-radius: 34px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+}
+
+.profile-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 34px;
+  background: linear-gradient(158deg, rgba(255, 255, 255, 0.16), transparent 42%);
+  pointer-events: none;
+}
+
+.profile-halo {
+  position: absolute;
+  inset: -16%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 42%,
+    rgba(124, 92, 255, 0.45),
+    rgba(34, 211, 238, 0.18) 46%,
+    transparent 68%
+  );
+  filter: blur(26px);
+  animation: profile-breathe 8s ease-in-out infinite;
+}
+
+.profile-ring {
+  position: absolute;
+  inset: -14px;
+  z-index: -1;
+  border-radius: 44px;
+  border: 1px dashed rgba(124, 92, 255, 0.5);
+  animation: profile-spin 34s linear infinite;
+}
+
+.profile-ring::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 54px;
+  border: 1px solid var(--line);
+}
+
+@keyframes profile-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes profile-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.profile-meta {
+  position: relative;
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+  margin-top: 1.4rem;
+  text-align: center;
+}
+
+.profile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.profile-name {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--text-strong);
+}
+
+.profile-role {
+  font-size: 0.74rem;
+  color: var(--accent-2);
+}
+
+.profile-stack {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-stack li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 0.7rem;
+  color: var(--muted);
+  transition: color 0.25s var(--ease), border-color 0.25s var(--ease),
+    transform 0.25s var(--ease);
+}
+
+.profile-stack li:hover {
+  color: var(--text-strong);
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
+
+/* Photo in the navbar / footer ------------------------------------------- */
+
+.brand-avatar {
+  overflow: hidden;
+  padding: 0;
+}
+
+.brand-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 44%;
+}
+
+/* Photo in the About card ------------------------------------------------- */
+
+.about-photo-card .profile {
+  width: 100%;
+}
+
+.profile-card .profile-img,
+.profile-card .profile-sheen {
+  border-radius: 24px;
+}
+
+.profile-card .profile-ring {
+  inset: -10px;
+  border-radius: 30px;
+}
+
+.profile-card .profile-ring::after {
+  inset: -8px;
+  border-radius: 36px;
+}
+
+.profile-card .profile-meta {
+  margin-top: 1.1rem;
+}
+
+.profile-card .profile-name {
+  font-size: 1.05rem;
+}
+
+.profile-card .profile-status {
+  display: none;
+}
+
+/* Hero arrangement -------------------------------------------------------- */
+
+.hero-visual {
+  gap: clamp(1.75rem, 4vw, 2.75rem);
+}
+
+/* The photo is a stacking context (z-index 1), so the floating badges need to
+   be lifted above it. */
+.float-badge {
+  z-index: 3;
+}
+
+.hero-visual .code-card {
+  max-width: 470px;
+}
+
+.float-badge-1 {
+  top: 3%;
+  left: -3%;
+  /* layout.css anchors these badges with `bottom`; clear it so setting `top`
+     does not stretch the badge between both edges. */
+  bottom: auto;
+}
+
+.float-badge-2 {
+  top: 44%;
+  right: -3%;
+  bottom: auto;
+}
+
+/* Responsive -------------------------------------------------------------- */
+
+@media (max-width: 1080px) {
+  .profile {
+    width: min(100%, 360px);
+    margin-inline: auto;
+  }
+
+  .float-badge-1 {
+    left: 0;
+  }
+
+  .float-badge-2 {
+    right: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .profile {
+    width: min(100%, 300px);
+  }
+
+  .profile-meta {
+    margin-top: 1.1rem;
+  }
+
+  .profile-name {
+    font-size: 1.1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-halo,
+  .profile-ring {
+    animation: none;
+  }
+}
