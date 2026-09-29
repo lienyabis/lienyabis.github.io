@@ -21,7 +21,7 @@ export const profile = {
   tagline:
     'I design and build fast, reliable and maintainable web applications with PHP, Laravel, React and Express.',
   summary:
-    'Web developer with 4+ years of hands-on experience delivering Laravel/PHP web applications, RESTful APIs and business systems for real clients. I started in software implementation - system analysis, data migration, parallel testing and user training - which is why I build products that people can actually adopt. Today I work across the full stack: Laravel and Express.js backends, React, jQuery/AJAX and Tailwind or Bootstrap frontends, MySQL databases and API integrations.',
+    'Web developer with 3+ years of hands-on experience delivering Laravel/PHP web applications, RESTful APIs and business systems for real clients. I started in software implementation - system analysis, data migration, parallel testing and user training - which is why I build products that people can actually adopt. Today I work across the full stack: Laravel and Express.js backends, React, jQuery/AJAX and Tailwind or Bootstrap frontends, MySQL databases and API integrations.',
   objective:
     'To enhance my professional skills, capabilities and knowledge in an organization which recognizes the value of hard work and trusts me with responsibilities and challenges.',
   location: 'Purok Calachuchi, Olivo, Tabuelan, Cebu, Philippines',
@@ -34,7 +34,7 @@ export const profile = {
 };
 
 export const stats = [
-  { value: 4, suffix: '+', label: 'Years Building for the Web' },
+  { value: 3, suffix: '+', label: 'Years Building for the Web' },
   { value: 5, suffix: '', label: 'Systems Delivered' },
   { value: 18, suffix: '+', label: 'Technologies Used' },
   { value: 4, suffix: '', label: 'Professional Roles' },

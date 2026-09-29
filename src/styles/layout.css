@@ -114,18 +114,21 @@
   z-index: 2;
 }
 
-/* The smoke canvas floats above the content so the plume wraps around it. */
-.smoke-cursor {
+/* The particle canvas sits above the content so the field is always visible.
+   `screen` can only ever lighten (it never dims text) in dark mode, and
+   `multiply` can only ever darken (it never washes out dark text) in light
+   mode, so the overlay is safe to draw over copy in either theme. */
+.particle-field {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 40;
   pointer-events: none;
   mix-blend-mode: screen;
 }
 
-[data-theme='light'] .smoke-cursor {
+[data-theme='light'] .particle-field {
   mix-blend-mode: multiply;
-  opacity: 0.75;
+  opacity: 0.85;
 }
 
 /* ==========================================================================
@@ -399,11 +402,13 @@
   pointer-events: none;
 }
 
+/* `start`, not `center`: the photo column is much taller than the copy, and
+   centring pushed the headline ~275px down, leaving a hole at the top-left. */
 .hero-inner {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  align-items: center;
+  align-items: start;
   gap: clamp(2rem, 5vw, 4rem);
   padding-bottom: clamp(3rem, 7vw, 5rem);
 }
@@ -698,28 +703,38 @@
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
 }
 
+/* The track holds exactly two identical groups, so -50% is one whole group and
+   the loop never jumps. --marquee-duration is measured from the real strip
+   width by Marquee.jsx to keep the travel speed constant. */
 .marquee-track {
   display: flex;
-  align-items: center;
-  gap: 2.5rem;
   width: max-content;
-  padding-inline: 1.25rem;
-  animation: marquee-scroll 34s linear infinite;
+  animation: marquee-scroll var(--marquee-duration, 26s) linear infinite;
+  will-change: transform;
 }
 
-.marquee:hover .marquee-track {
+.marquee-group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2.6rem;
+  padding-inline: 1.3rem;
+}
+
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
   animation-play-state: paused;
 }
 
 .marquee-item {
   display: inline-flex;
   align-items: center;
-  gap: 2.5rem;
+  gap: 0.7rem;
   font-family: var(--font-display);
   font-size: 0.95rem;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--text) 78%, transparent);
   white-space: nowrap;
   transition: color 0.3s var(--ease);
 }
@@ -742,6 +757,12 @@
   }
   to {
     transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
   }
 }
 

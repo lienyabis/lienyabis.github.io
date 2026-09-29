@@ -116,6 +116,10 @@ export default function Hero() {
               <Stat key={stat.label} {...stat} delay={index * 90} />
             ))}
           </div>
+
+          {/* Sits in the copy column so both hero columns end up roughly the
+              same height instead of leaving a hole above the headline. */}
+          <CodeCard />
         </div>
 
         <div className="hero-visual">
@@ -135,8 +139,6 @@ export default function Hero() {
               <em>REST APIs, JWT secured</em>
             </span>
           </div>
-
-          <CodeCard />
         </div>
       </div>
 

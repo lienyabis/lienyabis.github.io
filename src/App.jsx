@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import Navbar from './components/Navbar.jsx';
-import SmokeCursor from './components/SmokeCursor.jsx';
+import ParticleField from './components/ParticleField.jsx';
 import Hero from './components/Hero.jsx';
 import About from './components/About.jsx';
 import Skills from './components/Skills.jsx';
@@ -43,7 +43,7 @@ export default function App() {
         <span className="noise" />
       </div>
 
-      <SmokeCursor />
+      <ParticleField />
       <Navbar theme={theme} toggleTheme={toggleTheme} />
 
       <main className="app-main">

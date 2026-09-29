@@ -64,14 +64,6 @@
 
 /* Tech marquee ------------------------------------------------------------ */
 
-.marquee-item {
-  gap: 0.7rem;
-}
-
-.marquee-item i {
-  margin-left: 0.5rem;
-}
-
 .marquee-item .tech-logo {
   opacity: 0.85;
   transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
@@ -291,8 +283,8 @@
   z-index: 3;
 }
 
-.hero-visual .code-card {
-  max-width: 470px;
+.hero-copy .code-card {
+  margin-top: 0.5rem;
 }
 
 .float-badge-1 {

@@ -6,16 +6,19 @@ All content (skills, experience, projects, education, reference) is taken from
 
 ## Highlights
 
-- **Smoke cursor effect** - a canvas particle plume that trails the mouse pointer
-  (`src/components/SmokeCursor.jsx`). Soft sprites are pre-rendered offscreen so the
-  animation loop stays cheap; particles rise, expand and fade like smoke. Disabled
-  automatically on touch devices and when `prefers-reduced-motion` is set.
+- **Particle field** - a canvas constellation of drifting particles over the page
+  (`src/components/ParticleField.jsx`). Neighbouring particles link with faint lines,
+  each twinkle fades in and out, and particles near the pointer are pushed outwards and
+  brighten, with a soft bloom following the cursor. The palette is read from the
+  `--accent*` CSS variables, so it re-colours itself when the theme flips. The loop
+  stops while the tab is hidden and a single static frame is drawn when the visitor
+  prefers reduced motion.
 - **Dark by default** - the whole palette lives in CSS variables in `src/styles/base.css`.
   A light theme is layered on with `[data-theme="light"]` and the toggle in the navbar
   remembers the visitor's choice in `localStorage`.
 - **Reactive UI** - scroll-reveal animations, animated stat counters, typewriter role
   rotator, active-section navigation, scroll progress bar, card "spotlight" that follows
-  the pointer, tilting code card, back-to-top button and a pausable tech marquee.
+  the pointer, tilting code card, back-to-top button and a seamless tech marquee.
 - **Profile photo front and centre** - `public/profile.jpg` is the hero centrepiece
   (`src/components/ProfilePhoto.jsx`, square crop with a dashed rotating ring and a
   breathing glow), repeated in the About card and as the navbar/footer avatar. It is
@@ -63,13 +66,13 @@ src/
     useActiveSection.js     Highlights the section currently in view
     useCountUp.js           Animates numbers when they scroll into view
   components/
-    SmokeCursor.jsx         Canvas smoke trail
+    ParticleField.jsx       Canvas particle field + cursor bloom
     Navbar.jsx              Sticky glass nav, progress bar, mobile drawer
     Hero.jsx                Headline, typewriter roles, stats, marquee trigger
     ProfilePhoto.jsx        Profile photo, caption, highlight stack (hero + card)
     TechLogo.jsx            Brand mark for a technology (used in every list)
     CodeCard.jsx            Tilting "code editor" card
-    Marquee.jsx             Infinite tech strip
+    Marquee.jsx             Seamless tech strip (two identical groups, self-timed)
     About.jsx               Summary, objective, quick facts, interests
     Skills.jsx              Grouped skill cards with level meters
     Services.jsx            What I do (Laravel, APIs, implementation, support...)
@@ -80,7 +83,7 @@ src/
     Footer.jsx / BackToTop.jsx / Reveal.jsx / SectionHeading.jsx / Icon.jsx
   styles/
     base.css                Design tokens, reset, shared surfaces, buttons, forms
-    layout.css              App shell, background FX, smoke canvas, nav, hero, footer
+    layout.css              App shell, background FX, particle canvas, nav, hero, footer
     sections.css            Per-section layout
     media.css               Profile photo + tech logo styling (loaded last)
 legacy/                     The original static HTML/CSS/JS portfolio
