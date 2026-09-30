@@ -114,21 +114,25 @@
   z-index: 2;
 }
 
-/* The particle canvas sits above the content so the field is always visible.
-   `screen` can only ever lighten (it never dims text) in dark mode, and
-   `multiply` can only ever darken (it never washes out dark text) in light
-   mode, so the overlay is safe to draw over copy in either theme. */
-.particle-field {
+/* The galaxy sits *behind* the content, between the CSS backdrop (z-index 0)
+   and .app-main (z-index 2). Stars are drawn with their own alpha, so no blend
+   mode is needed and copy is never washed out. pointer-events: none keeps it
+   from swallowing clicks; the component tracks the pointer on `window` to
+   compensate, and resize re-reads uResolution so the field stays full-bleed. */
+.galaxy-container {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 1;
   pointer-events: none;
-  mix-blend-mode: screen;
+  overflow: hidden;
 }
 
-[data-theme='light'] .particle-field {
-  mix-blend-mode: multiply;
-  opacity: 0.85;
+/* ogl sizes the canvas in px from setSize(), so this only guards the very
+   first frame before the GL resize has run. */
+.galaxy-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* ==========================================================================

@@ -6,13 +6,16 @@ All content (skills, experience, projects, education, reference) is taken from
 
 ## Highlights
 
-- **Particle field** - a canvas constellation of drifting particles over the page
-  (`src/components/ParticleField.jsx`). Neighbouring particles link with faint lines,
-  each twinkle fades in and out, and particles near the pointer are pushed outwards and
-  brighten, with a soft bloom following the cursor. The palette is read from the
-  `--accent*` CSS variables, so it re-colours itself when the theme flips. The loop
-  stops while the tab is hidden and a single static frame is drawn when the visitor
-  prefers reduced motion.
+- **Galaxy background** - a WebGL star field behind the whole page
+  (`src/components/Galaxy.jsx`), the Galaxy effect from
+  [React Bits](https://reactbits.dev/backgrounds/galaxy) running on
+  [ogl](https://github.com/oframe/ogl). Four parallax layers of twinkling, flared
+  stars drift over a focal point and part around the pointer. It is adapted for
+  this site to track the pointer on `window` (the layer is `pointer-events: none`
+  so it sits behind the content), to cap its backing store at 2x DPR, to stop
+  while the tab is hidden, and to draw a single static frame when the visitor
+  prefers reduced motion. `lightMode` switches the shader to dark ink on white
+  for the light theme.
 - **Dark by default** - the whole palette lives in CSS variables in `src/styles/base.css`.
   A light theme is layered on with `[data-theme="light"]` and the toggle in the navbar
   remembers the visitor's choice in `localStorage`.
@@ -66,7 +69,7 @@ src/
     useActiveSection.js     Highlights the section currently in view
     useCountUp.js           Animates numbers when they scroll into view
   components/
-    ParticleField.jsx       Canvas particle field + cursor bloom
+    Galaxy.jsx              WebGL galaxy/star field (React Bits) + pointer repulsion
     Navbar.jsx              Sticky glass nav, progress bar, mobile drawer
     Hero.jsx                Headline, typewriter roles, stats, marquee trigger
     ProfilePhoto.jsx        Profile photo, caption, highlight stack (hero + card)
