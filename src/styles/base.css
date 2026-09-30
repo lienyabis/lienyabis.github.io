@@ -603,9 +603,23 @@ svg {
    * re-reads its cached offsets whenever the shared scroll pipeline reports a
    * layout change, which keeps the active nav link correct as sections resolve
    * to their real heights.
+   *
+   * Desktop only, and that restriction is load-bearing rather than cosmetic.
+   * `content-visibility` makes the browser skip a subtree it has judged off
+   * screen, and a skipped subtree has no boxes for IntersectionObserver to
+   * intersect - the `.reveal` children inside it sit at `opacity: 0` waiting for
+   * a callback that some mobile engines never send for a section that is already
+   * in view. On a phone, where sections stack one per screen and the optimisation
+   * buys the least (there is far less off-screen content to skip), that is a bad
+   * trade for invisible content. Below 769px the sections render normally.
    */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 900px;
+}
+
+@media (min-width: 769px) {
+  .section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 900px;
+  }
 }
 
 .section-heading {

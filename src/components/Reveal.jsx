@@ -15,9 +15,9 @@ import { useEffect, useRef, useState } from 'react';
  */
 const observerBuckets = new Map();
 
-const getObserver = (threshold) => {
-  let bucket = observerBuckets.get(threshold);
-  if (bucket) return bucket.observer;
+const getObserverBucket = (threshold) => {
+  const cached = observerBuckets.get(threshold);
+  if (cached) return cached;
 
   const callbacks = new WeakMap();
   const observer = new IntersectionObserver(
@@ -30,9 +30,13 @@ const getObserver = (threshold) => {
     { threshold, rootMargin: '0px 0px -70px 0px' },
   );
 
-  bucket = { observer, callbacks };
+  // The whole `{ observer, callbacks }` pair is stored and returned. Returning
+  // only `observer` from here would make the caller destructure `undefined` for
+  // both names, and the `callbacks.set(...)` on the next line would throw - which
+  // unmounts the entire React tree and leaves a blank page.
+  const bucket = { observer, callbacks };
   observerBuckets.set(threshold, bucket);
-  return observer;
+  return bucket;
 };
 
 const prefersReducedMotion = () =>
@@ -76,17 +80,63 @@ export default function Reveal({
       return undefined;
     }
 
-    const { observer, callbacks } = getObserver(threshold);
+    const { observer, callbacks } = getObserverBucket(threshold);
+
+    const reveal = () => {
+      callbacks.delete(el);
+      observer.unobserve(el);
+      setVisible(true);
+    };
 
     callbacks.set(el, (entry) => {
-      if (!entry.isIntersecting) return;
-      setVisible(true);
-      // One-shot: stop observing as soon as it has been revealed.
-      observer.unobserve(entry.target);
+      if (entry.isIntersecting) reveal();
     });
 
     observer.observe(el);
+
+    /*
+     * Safety net.
+     *
+     * `.reveal` starts at `opacity: 0`, so any trigger that fails to fire leaves
+     * that content permanently invisible - which is exactly what a blank page
+     * looks like on a phone. IntersectionObserver is the primary trigger, but it
+     * is not sufficient on its own:
+     *   - content inside a subtree the browser has skipped (the
+     *     `content-visibility` rule in base.css) reports no intersection until
+     *     the browser decides to render it, and on some mobile engines that
+     *     decision never arrives for a section that is already on screen;
+     *   - a restored scroll position can place an element inside the viewport
+     *     before the observer is attached.
+     * So we also test the element's own box, coalesced into one rAF, on scroll
+     * and resize until it reveals. Two passive listeners, both removed the
+     * moment it fires, so this costs nothing once the animation has played.
+     */
+    let frame = 0;
+    let watching = true;
+
+    const check = () => {
+      frame = 0;
+      if (!watching) return;
+      const rect = el.getBoundingClientRect();
+      // Matches the observer's `rootMargin: '0px 0px -70px 0px'`.
+      if (rect.top - 70 < window.innerHeight && rect.bottom > 0) reveal();
+    };
+
+    const scheduleCheck = () => {
+      if (watching && !frame) frame = requestAnimationFrame(check);
+    };
+
+    window.addEventListener('scroll', scheduleCheck, { passive: true });
+    window.addEventListener('resize', scheduleCheck, { passive: true });
+    // Covers an element that is already on screen at mount, where no scroll or
+    // resize event is guaranteed to ever arrive.
+    scheduleCheck();
+
     return () => {
+      watching = false;
+      window.removeEventListener('scroll', scheduleCheck);
+      window.removeEventListener('resize', scheduleCheck);
+      if (frame) cancelAnimationFrame(frame);
       callbacks.delete(el);
       observer.unobserve(el);
     };

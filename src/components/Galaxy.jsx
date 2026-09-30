@@ -49,15 +49,21 @@ void main() {
 `;
 
 /**
- * The fragment shader is parameterised by layer count.
+ * The fragment shader is parameterised by layer count and precision qualifier.
  *
  * NUM_LAYER has to be a compile-time constant because it drives a loop bound,
  * so it cannot be a runtime uniform. Building the source per device tier lets
  * phones compile a 2-layer variant instead of the 4-layer desktop one, which
  * halves the fragment work (each layer evaluates 9 cells) with no runtime cost.
+ *
+ * `precision` matters more than it looks: `highp` in a *fragment* shader is
+ * optional in GLSL ES 1.00, and plenty of mobile GPUs do not advertise it.
+ * Asking for it there produces a shader that fails to compile, and ogl throws
+ * on a failed link - which, thrown from an effect, unmounts the whole React tree
+ * and blanks the page. The caller probes support and passes `mediump` instead.
  */
-const buildFragmentShader = (layerCount) => `
-precision highp float;
+const buildFragmentShader = (layerCount, precision) => `
+precision ${precision} float;
 
 uniform float uTime;
 uniform vec3 uResolution;
@@ -281,16 +287,30 @@ export default function Galaxy({
     const ctn = ctnDom.current;
     if (!ctn) return undefined;
 
-    const renderer = new Renderer({
-      alpha: transparent,
-      premultipliedAlpha: false,
-      // The star field is a soft, blurred glow, so a 1.5x backing store is
-      // visually indistinguishable from 2x while costing ~45% less fill rate.
-      // Phones stay at 1x. The fragment shader is heavy (layers x 9 cells), so
-      // this is one of the largest single wins available.
-      dpr: tier.dpr,
-    });
-    const gl = renderer.gl;
+    /*
+     * The star field is decoration. Everything from here to the end of the effect
+     * is guarded, because a `throw` out of an effect propagates to the React
+     * root, which unmounts the entire tree - a GPU that refuses a context, or a
+     * shader that will not link, would take the whole portfolio down with it and
+     * leave nothing but the dark body background.
+     */
+    let renderer;
+    let gl;
+    try {
+      renderer = new Renderer({
+        alpha: transparent,
+        premultipliedAlpha: false,
+        // The star field is a soft, blurred glow, so a 1.5x backing store is
+        // visually indistinguishable from 2x while costing ~45% less fill rate.
+        // Phones stay at 1x. The fragment shader is heavy (layers x 9 cells), so
+        // this is one of the largest single wins available.
+        dpr: tier.dpr,
+      });
+      gl = renderer.gl;
+    } catch (error) {
+      console.warn('Galaxy: WebGL context unavailable, skipping the star field.', error);
+      return undefined;
+    }
     if (!gl) return undefined;
 
     if (lightMode) {
@@ -331,38 +351,60 @@ export default function Galaxy({
     window.addEventListener('resize', resize, false);
     resize();
 
+    // `highp` is optional for fragment shaders in GLSL ES 1.00 and is genuinely
+    // missing on some mobile GPUs, where requesting it produces a shader that
+    // fails to link. Probe first and step down rather than let it throw.
+    let precision = 'highp';
+    try {
+      const highp = gl.getShaderPrecisionFormat?.(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+      if (!highp || !highp.precision) precision = 'mediump';
+    } catch {
+      precision = 'mediump';
+    }
+
     const geometry = new Triangle(gl);
-    program = new Program(gl, {
-      vertex: vertexShader,
-      fragment: buildFragmentShader(tier.layers),
-      uniforms: {
-        uTime: { value: 0 },
-        uResolution: {
-          value: new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height),
+    try {
+      program = new Program(gl, {
+        vertex: vertexShader,
+        fragment: buildFragmentShader(tier.layers, precision),
+        uniforms: {
+          uTime: { value: 0 },
+          uResolution: {
+            value: new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height),
+          },
+          uFocal: { value: new Float32Array(focal) },
+          uRotation: { value: new Float32Array(rotation) },
+          uStarSpeed: { value: starSpeed },
+          uDensity: { value: density },
+          uHueShift: { value: hueShift },
+          uSpeed: { value: speed },
+          uMouse: {
+            value: new Float32Array([smoothMousePos.current.x, smoothMousePos.current.y]),
+          },
+          uGlowIntensity: { value: glowIntensity },
+          uSaturation: { value: saturation },
+          uMouseRepulsion: { value: mouseRepulsion },
+          uTwinkleIntensity: { value: twinkleIntensity },
+          uRotationSpeed: { value: rotationSpeed },
+          uRepulsionStrength: { value: repulsionStrength },
+          uMouseActiveFactor: { value: 0.0 },
+          uAutoCenterRepulsion: { value: autoCenterRepulsion },
+          uTransparent: { value: transparent },
+          uLightMode: { value: lightMode ? 1 : 0 },
         },
-        uFocal: { value: new Float32Array(focal) },
-        uRotation: { value: new Float32Array(rotation) },
-        uStarSpeed: { value: starSpeed },
-        uDensity: { value: density },
-        uHueShift: { value: hueShift },
-        uSpeed: { value: speed },
-        uMouse: {
-          value: new Float32Array([smoothMousePos.current.x, smoothMousePos.current.y]),
-        },
-        uGlowIntensity: { value: glowIntensity },
-        uSaturation: { value: saturation },
-        uMouseRepulsion: { value: mouseRepulsion },
-        uTwinkleIntensity: { value: twinkleIntensity },
-        uRotationSpeed: { value: rotationSpeed },
-        uRepulsionStrength: { value: repulsionStrength },
-        uMouseActiveFactor: { value: 0.0 },
-        uAutoCenterRepulsion: { value: autoCenterRepulsion },
-        uTransparent: { value: transparent },
-        uLightMode: { value: lightMode ? 1 : 0 },
-      },
-    });
-    programRef.current = program;
-    glRef.current = gl;
+      });
+      programRef.current = program;
+      glRef.current = gl;
+    } catch (error) {
+      // Shader failed to compile or link. Undo the resize listener and drop the
+      // half-built context; the CSS backdrop behind this canvas still renders,
+      // so the page keeps its background instead of going blank.
+      console.warn('Galaxy: shader setup failed, skipping the star field.', error);
+      window.removeEventListener('resize', resize, false);
+      gl.canvas.remove();
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      return undefined;
+    }
 
     const mesh = new Mesh(gl, { geometry, program });
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');

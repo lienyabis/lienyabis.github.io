@@ -9,6 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "logos": "node scripts/gen-tech-logos.mjs",
+    "verify": "node scripts/verify-mobile.mjs",
+    "verify:desktop": "node scripts/verify-mobile.mjs --width 1440 --height 900",
     "predev": "npm run logos",
     "prebuild": "npm run logos"
   },
