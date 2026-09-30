@@ -4,8 +4,8 @@ import { useEffect, useRef } from 'react';
 /**
  * Galaxy
  * ------
- * A WebGL star field: four parallax layers of twinkling, flared stars over a
- * focal point, with the stars pushed away from the pointer as it moves.
+ * A WebGL star field: parallax layers of twinkling, flared stars over a focal
+ * point, with the stars pushed away from the pointer as it moves.
  *
  * Adapted from React Bits (https://reactbits.dev/backgrounds/galaxy), MIT.
  * What changed to suit this project:
@@ -15,11 +15,21 @@ import { useEffect, useRef } from 'react';
  *  - The container is `pointer-events: none` so the field can sit behind the
  *    content without stealing clicks. That also means it can no longer be its
  *    own event source, so the pointer is tracked on `window` instead.
- *  - The backing store is DPR aware (capped at 2) so the stars stay crisp on
- *    high density screens without paying 4x the fragment cost.
+ *
+ * Performance notes (this background is full-viewport, so its per-frame cost is
+ * paid on every single scroll frame - it is the page's biggest GPU item):
+ *  - The backing store is DPR aware but capped at 1.5x (1x on phones). The
+ *    field is a soft glow, so the extra sharpness of 2x is not resolvable while
+ *    costing ~45% more fill rate.
+ *  - NUM_LAYER is baked into the shader source per device tier, so phones
+ *    compile a 2-layer variant instead of the 4-layer desktop one.
+ *  - The render loop is capped at 30fps. The field rotates at 0.1 rad/s, so the
+ *    remaining frames bought motion nobody can see at the cost of a full
+ *    viewport fragment pass each.
  *  - The loop stops while the tab is hidden, and a single static frame is
- *    drawn when the visitor prefers reduced motion, matching the particle
- *    field this replaced.
+ *    drawn when the visitor prefers reduced motion.
+ *  - The container's box is cached and only re-measured on resize, so the
+ *    pointermove handler never forces a layout.
  *  - `lightMode` flips the shader to dark ink on white for the light theme.
  *  - The two array props are compared as joined strings. Upstream lists them
  *    by identity, but they default to fresh literals every render, so that
@@ -38,7 +48,15 @@ void main() {
 }
 `;
 
-const fragmentShader = `
+/**
+ * The fragment shader is parameterised by layer count.
+ *
+ * NUM_LAYER has to be a compile-time constant because it drives a loop bound,
+ * so it cannot be a runtime uniform. Building the source per device tier lets
+ * phones compile a 2-layer variant instead of the 4-layer desktop one, which
+ * halves the fragment work (each layer evaluates 9 cells) with no runtime cost.
+ */
+const buildFragmentShader = (layerCount) => `
 precision highp float;
 
 uniform float uTime;
@@ -63,7 +81,7 @@ uniform float uLightMode;
 
 varying vec2 vUv;
 
-#define NUM_LAYER 4.0
+#define NUM_LAYER ${layerCount.toFixed(1)}
 #define STAR_COLOR_CUTOFF 0.2
 #define MAT45 mat2(0.7071, -0.7071, 0.7071, 0.7071)
 #define PERIOD 3.0
@@ -237,6 +255,28 @@ export default function Galaxy({
   const focalKey = focal.join(',');
   const rotationKey = rotation.join(',');
 
+  /**
+   * Device tier, resolved once per mount.
+   *
+   * `matchMedia` is a style/layout read, so this used to run inside its own
+   * effect that had to complete before the main one. Resolving it inline on
+   * first render removes that ordering dependency and one layout read.
+   */
+  const tierRef = useRef(null);
+  if (tierRef.current === null) {
+    const narrow = window.matchMedia('(max-width: 768px)').matches;
+    tierRef.current = {
+      // Phones get a 2-layer shader (half the fragment work) and a 1x backing
+      // store; desktop keeps all 4 layers at up to 1.5x.
+      layers: narrow ? 2 : 4,
+      dpr: Math.min(window.devicePixelRatio || 1, narrow ? 1 : 1.5),
+      // The field drifts slowly enough that 30fps is indistinguishable from 60,
+      // and it halves the GPU cost of a full-viewport pass every frame.
+      fps: 30,
+    };
+  }
+  const tier = tierRef.current;
+
   useEffect(() => {
     const ctn = ctnDom.current;
     if (!ctn) return undefined;
@@ -244,10 +284,11 @@ export default function Galaxy({
     const renderer = new Renderer({
       alpha: transparent,
       premultipliedAlpha: false,
-      // Cap the backing store at 2x. The fragment shader is heavy (4 layers x 9
-      // cells), so a 3x phone would otherwise cost 9x the fill rate for detail
-      // nobody can resolve.
-      dpr: Math.min(window.devicePixelRatio || 1, 2),
+      // The star field is a soft, blurred glow, so a 1.5x backing store is
+      // visually indistinguishable from 2x while costing ~45% less fill rate.
+      // Phones stay at 1x. The fragment shader is heavy (layers x 9 cells), so
+      // this is one of the largest single wins available.
+      dpr: tier.dpr,
     });
     const gl = renderer.gl;
     if (!gl) return undefined;
@@ -264,7 +305,20 @@ export default function Galaxy({
 
     let program;
 
+    // Cached container box. `getBoundingClientRect()` inside a pointermove
+    // handler is a forced layout on every mouse event; the container is
+    // `position: fixed; inset: 0`, so this only changes on resize.
+    let bounds = null;
+    const measureBounds = () => {
+      bounds = ctn.getBoundingClientRect();
+    };
+
     function resize() {
+      measureBounds();
+      // Re-clamp DPR on every resize so dragging the window to a different-DPI
+      // display (or a browser zoom change) re-derives the fill rate instead of
+      // inheriting whatever was cached at mount.
+      renderer.dpr = Math.min(window.devicePixelRatio || 1, tier.dpr);
       renderer.setSize(ctn.offsetWidth, ctn.offsetHeight);
       if (program) {
         program.uniforms.uResolution.value = new Color(
@@ -280,7 +334,7 @@ export default function Galaxy({
     const geometry = new Triangle(gl);
     program = new Program(gl, {
       vertex: vertexShader,
-      fragment: fragmentShader,
+      fragment: buildFragmentShader(tier.layers),
       uniforms: {
         uTime: { value: 0 },
         uResolution: {
@@ -325,7 +379,8 @@ export default function Galaxy({
       }
 
       // Ease towards the pointer so the repulsion glides instead of snapping.
-      const lerpFactor = 0.05;
+      // The factor is scaled by the actual frame rate so the glide covers the
+      // same ground per *second* whether we run at 60fps or the throttled 30.
       smoothMousePos.current.x += (targetMousePos.current.x - smoothMousePos.current.x) * lerpFactor;
       smoothMousePos.current.y += (targetMousePos.current.y - smoothMousePos.current.y) * lerpFactor;
       smoothMouseActive.current += (targetMouseActive.current - smoothMouseActive.current) * lerpFactor;
@@ -338,13 +393,35 @@ export default function Galaxy({
     };
     drawRef.current = draw;
 
+    /**
+     * Frame rate cap.
+     *
+     * The field drifts very slowly (0.1 rad/s), so drawing it at 60fps burns
+     * a full-viewport fragment pass per frame for motion nobody can perceive -
+     * and every one of those passes competes with scrolling for GPU time.
+     * Capping at 30fps halves the cost with no visible difference, and the
+     * remainder of the interval is skipped inside the existing rAF tick rather
+     * than spinning up extra timers.
+     */
+    const frameInterval = 1000 / tier.fps;
+    // 0.05 per 60fps frame, converted to the throttled rate.
+    const lerpFactor = 1 - Math.pow(1 - 0.05, 60 / tier.fps);
+    let lastDraw = -Infinity;
+
     const update = (t) => {
       animateId = requestAnimationFrame(update);
+
+      // Carrying the remainder forward keeps the cadence even instead of
+      // drifting by a fraction of a frame on every tick.
+      if (t - lastDraw < frameInterval) return;
+      lastDraw = t - ((t - lastDraw) % frameInterval);
+
       draw(t);
     };
 
     const start = () => {
       if (animateId || document.hidden) return;
+      lastDraw = -Infinity;
       animateId = requestAnimationFrame(update);
     };
 
@@ -379,12 +456,13 @@ export default function Galaxy({
     // page without swallowing clicks - which also means it never receives its
     // own mousemove, so the pointer is tracked on the window instead.
     const handlePointerMove = (e) => {
-      const rect = ctn.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
+      // Uses the box cached in resize() - this fires on every mouse event and
+      // getBoundingClientRect() would force a layout each time.
+      if (!bounds || !bounds.width || !bounds.height) return;
       targetMousePos.current = {
-        x: (e.clientX - rect.left) / rect.width,
+        x: (e.clientX - bounds.left) / bounds.width,
         // GL's origin is bottom-left, the DOM's is top-left.
-        y: 1.0 - (e.clientY - rect.top) / rect.height,
+        y: 1.0 - (e.clientY - bounds.top) / bounds.height,
       };
       targetMouseActive.current = 1.0;
     };
@@ -422,7 +500,7 @@ export default function Galaxy({
       gl.canvas.remove();
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [focalKey, rotationKey, disableAnimation, mouseInteraction, transparent]);
+  }, [focalKey, rotationKey, disableAnimation, mouseInteraction, transparent, tier]);
 
   // Anything that is just a uniform value is pushed into the live program
   // instead of being a reason to tear the GL context down and build a new one.

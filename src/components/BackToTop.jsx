@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon.jsx';
+import { subscribeScroll } from '../utils/scrollMetrics.js';
 
 /** Floating "back to top" button, shown once the visitor scrolls down. */
 export default function BackToTop() {
   const [visible, setVisible] = useState(false);
+  const visibleRef = useRef(false);
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 700);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return subscribeScroll((state) => {
+      const next = state.scrollY > 700;
+      if (next === visibleRef.current) return;
+
+      visibleRef.current = next;
+      setVisible(next);
+    });
   }, []);
 
   return (

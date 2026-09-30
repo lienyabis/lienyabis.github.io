@@ -1,25 +1,42 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon.jsx';
 import useActiveSection from '../hooks/useActiveSection.js';
+import { subscribeScroll } from '../utils/scrollMetrics.js';
 import { navLinks, profile } from '../data/portfolio.js';
 
 const sectionIds = navLinks.map((link) => link.id);
 
 export default function Navbar({ theme, toggleTheme }) {
   const [scrolled, setScrolled] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const active = useActiveSection(sectionIds);
+  const progressRef = useRef(null);
+  const scrolledRef = useRef(false);
 
+  /**
+   * The progress bar is driven straight through a CSS custom property on a
+   * ref. It used to live in `useState`, which meant React re-rendered this
+   * entire component - nav links, the mobile drawer, every icon - on every
+   * single scroll event, because the percentage changes continuously.
+   *
+   * `scrolled` still uses state (it only flips twice per page) but is guarded so
+   * it can never re-render for a value that has not actually changed.
+   */
   useEffect(() => {
-    const onScroll = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setScrolled(window.scrollY > 24);
-      setProgress(max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0);
-    };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const bar = progressRef.current;
+
+    return subscribeScroll((state) => {
+      if (bar) {
+        const ratio = state.maxScroll > 0 ? state.scrollY / state.maxScroll : 0;
+        bar.style.setProperty('--progress', ratio.toFixed(4));
+      }
+
+      const next = state.scrollY > 24;
+      if (next !== scrolledRef.current) {
+        scrolledRef.current = next;
+        setScrolled(next);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -46,7 +63,7 @@ export default function Navbar({ theme, toggleTheme }) {
   return (
     <>
       <div className="scroll-progress" aria-hidden="true">
-        <span style={{ transform: `scaleX(${progress / 100})` }} />
+        <span ref={progressRef} />
       </div>
 
       <header className={`site-header${scrolled ? ' is-scrolled' : ''}`}>

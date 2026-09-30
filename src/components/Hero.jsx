@@ -124,7 +124,7 @@ export default function Hero() {
 
         <div className="hero-visual">
           <ProfilePhoto />
-
+{/*
           <div className="float-badge float-badge-1 glass">
             <TechLogo name="React" size={17} />
             <span>
@@ -139,6 +139,7 @@ export default function Hero() {
               <em>REST APIs, JWT secured</em>
             </span>
           </div>
+  */}
         </div>
       </div>
 

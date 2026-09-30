@@ -19,18 +19,48 @@ export default function App() {
   /**
    * One delegated pointer listener drives the "spotlight" highlight on every
    * card that opts in with the .spotlight class.
+   *
+   * Two things made this hot before. `event.target.closest('.spotlight')` walks
+   * the ancestor chain, and `getBoundingClientRect()` forces a layout - both on
+   * *every* pointermove, which fires far more often than the screen refreshes.
+   * Now the lookup is keyed on the last target (so crossing a child element
+   * re-resolves, but moving within one element is free), the rect is cached, and
+   * the two custom-property writes are coalesced into one per frame.
    */
   useEffect(() => {
+    if (window.matchMedia('(max-width: 768px)').matches) return undefined;
+
+    let lastTarget = null;
+    let current = null;
+    let currentRect = null;
+    let latest = null;
+    let frame = 0;
+
+    const flush = () => {
+      frame = 0;
+      if (!current || !currentRect || !latest) return;
+      current.style.setProperty('--mx', `${latest.clientX - currentRect.left}px`);
+      current.style.setProperty('--my', `${latest.clientY - currentRect.top}px`);
+    };
+
     const onPointerMove = (event) => {
-      const target = event.target.closest?.('.spotlight');
-      if (!target) return;
-      const rect = target.getBoundingClientRect();
-      target.style.setProperty('--mx', `${event.clientX - rect.left}px`);
-      target.style.setProperty('--my', `${event.clientY - rect.top}px`);
+      const target = event.target;
+      if (target !== lastTarget) {
+        lastTarget = target;
+        current = target?.closest?.('.spotlight') ?? null;
+        currentRect = current ? current.getBoundingClientRect() : null;
+      }
+
+      if (!current) return;
+      latest = { clientX: event.clientX, clientY: event.clientY };
+      if (!frame) frame = requestAnimationFrame(flush);
     };
 
     window.addEventListener('pointermove', onPointerMove, { passive: true });
-    return () => window.removeEventListener('pointermove', onPointerMove);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   return (

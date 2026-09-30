@@ -117,13 +117,18 @@
   inset: -16%;
   z-index: -1;
   border-radius: 50%;
-  background: radial-gradient(
+  /*
+   * Was `filter: blur(26px)` on an animated element. Baking the falloff into
+   * the gradient keeps the identical look without a per-frame Gaussian blur.
+   */
+  /* background: radial-gradient(
     circle at 50% 42%,
-    rgba(124, 92, 255, 0.45),
-    rgba(34, 211, 238, 0.18) 46%,
-    transparent 68%
-  );
-  filter: blur(26px);
+    rgba(124, 92, 255, 0.42) 0%,
+    rgba(124, 92, 255, 0.3) 30%,
+    rgba(34, 211, 238, 0.16) 52%,
+    rgba(34, 211, 238, 0.06) 64%,
+    transparent 76%
+  ); */
   animation: profile-breathe 8s ease-in-out infinite;
 }
 

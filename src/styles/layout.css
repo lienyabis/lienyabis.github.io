@@ -26,12 +26,20 @@
     linear-gradient(180deg, #f7f8fd 0%, var(--bg-0) 60%);
 }
 
+/*
+ * The orbs used to carry `filter: blur(90px)` on elements up to 46vw across,
+ * three of them, animated. A 90px Gaussian blur is enormously expensive and has
+ * to be recomputed whenever the layer is re-rastered - and because the field
+ * animates, that is constant. The softness is instead baked into the gradient
+ * itself, which is visually equivalent for a plain radial glow and costs
+ * nothing at paint time.
+ */
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
   opacity: 0.5;
   animation: orb-float 22s ease-in-out infinite;
+  will-change: transform;
 }
 
 .orb-1 {
@@ -39,7 +47,13 @@
   height: 46vw;
   top: -14vw;
   left: -8vw;
-  background: radial-gradient(circle, rgba(124, 92, 255, 0.55), transparent 68%);
+  background: radial-gradient(
+    circle,
+    rgba(124, 92, 255, 0.5) 0%,
+    rgba(124, 92, 255, 0.28) 28%,
+    rgba(124, 92, 255, 0.1) 48%,
+    transparent 72%
+  );
 }
 
 .orb-2 {
@@ -47,7 +61,13 @@
   height: 40vw;
   top: 18vh;
   right: -12vw;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.4), transparent 68%);
+  background: radial-gradient(
+    circle,
+    rgba(34, 211, 238, 0.36) 0%,
+    rgba(34, 211, 238, 0.2) 28%,
+    rgba(34, 211, 238, 0.07) 50%,
+    transparent 74%
+  );
   animation-delay: -7s;
 }
 
@@ -56,7 +76,13 @@
   height: 34vw;
   bottom: -14vw;
   left: 26vw;
-  background: radial-gradient(circle, rgba(255, 77, 106, 0.28), transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 77, 106, 0.26) 0%,
+    rgba(255, 77, 106, 0.14) 30%,
+    rgba(255, 77, 106, 0.05) 52%,
+    transparent 76%
+  );
   animation-delay: -14s;
 }
 
@@ -90,23 +116,25 @@
 
 .noise {
   position: absolute;
-  inset: -50%;
+  /*
+   * Was `inset: -50%`, which sized this element to 2x the viewport in each
+   * axis - four screens' worth of pixels. The animation only ever moved it by
+   * ~2%, so -6% is plenty to avoid an edge gap at a fraction of the fill cost.
+   */
+  inset: -6%;
   opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
-  mix-blend-mode: overlay;
-  animation: noise-shift 0.9s steps(3) infinite;
-}
-
-@keyframes noise-shift {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(-2%, 1%, 0);
-  }
-  100% {
-    transform: translate3d(1%, -2%, 0);
-  }
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/xml' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  /*
+   * `mix-blend-mode: overlay` used to sit here. It forced the compositor to
+   * read back everything beneath this layer on every composite, and the
+   * `noise-shift` animation re-triggered that ~3x a second across a
+   * full-screen area. The grain is a 5% overlay either way, so the blend mode
+   * was buying nothing visible.
+   *
+   * The shimmer is also gone: at this opacity a static tile is indistinguishable
+   * from a moving one, and a static tile never has to repaint.
+   */
+  pointer-events: none;
 }
 
 .app-main {
@@ -153,7 +181,12 @@
   display: block;
   height: 100%;
   transform-origin: 0 50%;
-  transform: scaleX(0);
+  /*
+   * Driven straight from JS via a custom property (see Navbar.jsx). This used to
+   * be a React inline style, which meant a full component re-render on every
+   * scroll event just to move a 2px bar.
+   */
+  transform: scaleX(var(--progress, 0));
   background: var(--gradient);
   box-shadow: 0 0 14px rgba(124, 92, 255, 0.8);
 }
@@ -165,17 +198,25 @@
   width: 100%;
   z-index: 80;
   border-bottom: 1px solid transparent;
-  transition: background 0.35s var(--ease), backdrop-filter 0.35s var(--ease),
-    border-color 0.35s var(--ease), box-shadow 0.35s var(--ease);
+  /*
+   * `backdrop-filter` and the `backdrop-filter` entry in the transition are both
+   * gone. The header is full-width and sits permanently on top of the
+   * animating WebGL star field, so a backdrop blur made the compositor re-blur
+   * the entire header strip on every frame the field drew - and it was also
+   * animating that blur on a 0.35s transition. This was the single most
+   * expensive thing on the page while scrolling. The fill below is near-opaque,
+   * so it reads the same.
+   */
+  transition: background 0.35s var(--ease), border-color 0.35s var(--ease),
+    box-shadow 0.35s var(--ease);
 }
 
 .site-header.is-scrolled {
-  background: color-mix(in srgb, var(--bg-0) 78%, transparent);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: color-mix(in srgb, var(--bg-0) 92%, transparent);
   border-bottom-color: var(--line);
   box-shadow: 0 18px 40px -34px rgba(0, 0, 0, 0.9);
 }
+
 
 .nav {
   display: flex;
@@ -238,8 +279,7 @@
   padding: 0.3rem;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: var(--surface);
-  backdrop-filter: blur(10px);
+  background: var(--surface-2);
 }
 
 .nav-link {
@@ -323,15 +363,14 @@
   align-content: start;
   gap: 1.5rem;
   padding: 2rem clamp(1.2rem, 6vw, 2.5rem);
-  background: color-mix(in srgb, var(--bg-0) 92%, transparent);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  background: var(--bg-0);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-8px);
   transition: opacity 0.35s var(--ease), transform 0.35s var(--ease),
     visibility 0.35s var(--ease);
 }
+
 
 .mobile-drawer.is-open {
   opacity: 1;
@@ -401,8 +440,18 @@
   height: min(900px, 90vw);
   transform: translateX(-50%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(124, 92, 255, 0.22), transparent 62%);
-  filter: blur(20px);
+  /*
+   * Was `filter: blur(20px)`. The softness is baked into the gradient instead -
+   * a 900px Gaussian blur is a large per-frame cost for a static decorative
+   * glow, and a multi-stop radial gradient is visually the same.
+   */
+  background: radial-gradient(
+    circle,
+    rgba(124, 92, 255, 0.2) 0%,
+    rgba(124, 92, 255, 0.13) 32%,
+    rgba(124, 92, 255, 0.05) 52%,
+    transparent 72%
+  );
   pointer-events: none;
 }
 
@@ -563,8 +612,14 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+  /*
+   * `float-card` animates the standalone `translate` property, which the
+   * compositor handles without a layer hint. The old `will-change: transform`
+   * promoted a large card permanently to save work the animation was not doing.
+   */
   animation: float-card 7s ease-in-out infinite;
 }
+
 
 @keyframes float-card {
   0%,
@@ -710,11 +765,17 @@
 /* The track holds exactly two identical groups, so -50% is one whole group and
    the loop never jumps. --marquee-duration is measured from the real strip
    width by Marquee.jsx to keep the travel speed constant. */
+/*
+ * No permanent `will-change`. The track is `width: max-content` across two
+ * copies of the strip, so promoting it allocates a composited layer several
+ * thousand pixels wide that is held for the life of the page. A CSS transform
+ * animation is already promoted automatically for the duration of the
+ * animation, so the hint was pure overhead.
+ */
 .marquee-track {
   display: flex;
   width: max-content;
   animation: marquee-scroll var(--marquee-duration, 26s) linear infinite;
-  will-change: transform;
 }
 
 .marquee-group {
@@ -780,8 +841,7 @@
   margin-top: clamp(3rem, 7vw, 6rem);
   padding: clamp(2.5rem, 5vw, 3.5rem) 0 1.5rem;
   border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg-0) 70%, transparent);
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--bg-0) 88%, transparent);
 }
 
 .footer-inner {
@@ -881,9 +941,8 @@
   height: 46px;
   border-radius: 14px;
   border: 1px solid var(--line-strong);
-  background: color-mix(in srgb, var(--bg-1) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-1) 92%, transparent);
   color: var(--text);
-  backdrop-filter: blur(12px);
   box-shadow: var(--shadow-sm);
   opacity: 0;
   visibility: hidden;

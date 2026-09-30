@@ -194,11 +194,17 @@ svg {
 
 .glass {
   position: relative;
-  background: var(--surface);
+  /*
+   * No `backdrop-filter` here. There are 16 of these on the page and they sit
+   * over the animated WebGL galaxy, so a backdrop blur forces the compositor to
+   * re-sample and re-blur every card's backdrop on every single frame the field
+   * animates - one of the most expensive things on the page while scrolling.
+   * The fill is raised so the card still reads as a solid, slightly translucent
+   * surface without the per-frame cost.
+   */
+  background: color-mix(in srgb, var(--bg-1) 76%, transparent);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   box-shadow: var(--shadow-sm);
   transition: border-color 0.35s var(--ease), transform 0.35s var(--ease),
     box-shadow 0.35s var(--ease), background 0.35s var(--ease);
@@ -294,6 +300,18 @@ svg {
   opacity: 0;
   transform: translate3d(0, var(--reveal-y, 26px), 0);
   transition: opacity 0.75s var(--ease), transform 0.75s var(--ease);
+}
+
+/*
+ * `will-change` is scoped to the window in which the element is actually
+ * animating. It used to sit on `.reveal` unconditionally, which promoted every
+ * one of the ~34 reveal targets to its own compositor layer and never let them
+ * go. Dozens of permanently-promoted layers cost real memory and make the
+ * compositor re-raster constantly - a major source of scroll jank, especially
+ * on phones. `Reveal.jsx` adds `.is-settled` once the entrance finishes, which
+ * drops the hint and lets the layer be released.
+ */
+.reveal:not(.is-settled) {
   will-change: opacity, transform;
 }
 
@@ -574,6 +592,20 @@ svg {
 .section {
   position: relative;
   padding: clamp(4.5rem, 9vw, 8rem) 0;
+  /*
+   * Skips layout and paint for sections that are off screen. The page is eight
+   * sections tall, so without this the browser lays out and paints the entire
+   * document up front and re-rasters more of it on every scroll frame.
+   *
+   * `contain-intrinsic-size: auto <size>` supplies a placeholder height while a
+   * section is skipped, then lets the browser remember the real measured height
+   * the next time it is laid out - so the scrollbar stays stable. `useActiveSection`
+   * re-reads its cached offsets whenever the shared scroll pipeline reports a
+   * layout change, which keeps the active nav link correct as sections resolve
+   * to their real heights.
+   */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
 }
 
 .section-heading {
