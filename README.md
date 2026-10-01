@@ -10,31 +10,8 @@ All content (skills, experience, projects, education, reference) is taken from
   (`src/components/Galaxy.jsx`), the Galaxy effect from
   [React Bits](https://reactbits.dev/backgrounds/galaxy) running on
   [ogl](https://github.com/oframe/ogl). Four parallax layers of twinkling, flared
-  stars drift over a focal point and part around the pointer. It is adapted for
-  this site to track the pointer on `window` (the layer is `pointer-events: none`
-  so it sits behind the content), to cap its backing store at 2x DPR, to stop
-  while the tab is hidden, and to draw a single static frame when the visitor
-  prefers reduced motion. `lightMode` switches the shader to dark ink on white
-  for the light theme.
-- **Dark by default** - the whole palette lives in CSS variables in `src/styles/base.css`.
-  A light theme is layered on with `[data-theme="light"]` and the toggle in the navbar
-  remembers the visitor's choice in `localStorage`.
-- **Reactive UI** - scroll-reveal animations, animated stat counters, typewriter role
-  rotator, active-section navigation, scroll progress bar, card "spotlight" that follows
-  the pointer, tilting code card, back-to-top button and a seamless tech marquee.
-- **Profile photo front and centre** - `public/profile.jpg` is the hero centrepiece
-  (`src/components/ProfilePhoto.jsx`, square crop with a dashed rotating ring and a
-  breathing glow), repeated in the About card and as the navbar/footer avatar. It is
-  preloaded and sized (`width`/`height`, `fetchpriority="high"`) so it does not shift
-  layout or delay the largest paint.
-- **Real brand logos everywhere** - every skill, stack chip and marquee entry is drawn
-  with its own brand mark in the brand's own colour (`src/components/TechLogo.jsx`).
-  Marks are vendored from [Simple Icons](https://simple-icons.org) (CC0-1.0) by
-  `npm run logos`, which emits only the logos the content actually uses. Skills with no
-  real brand (Telerik, Crystal Reports, data migration, system analysis, ...) get
-  hand-drawn neutral marks so the rows still read consistently.
-- **Sections a web/PHP/Laravel developer needs** - hero, about, skills, services,
-  experience timeline, projects, education + reference, contact form and footer.
+  stars drift over a focal point and part around the pointer.
+
 - **Accessible & responsive** - keyboard-friendly focus rings, Escape closes the mobile
   drawer, semantic landmarks, and layouts that collapse cleanly down to 360px.
 
