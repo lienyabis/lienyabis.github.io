@@ -34,7 +34,7 @@ export const profile = {
 };
 
 export const stats = [
-  { value: 3, suffix: '+', label: 'Years Building for the Web' },
+  { value: 5, suffix: '+', label: 'Years Building for the Web' },
   { value: 5, suffix: '', label: 'Systems Delivered' },
   { value: 18, suffix: '+', label: 'Technologies Used' },
   { value: 4, suffix: '', label: 'Professional Roles' },
