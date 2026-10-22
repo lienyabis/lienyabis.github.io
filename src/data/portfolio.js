@@ -206,7 +206,7 @@ export const experience = [
   },
   {
     role: 'OJT Web Developer',
-    company: 'Publicized Media Group',
+    company: 'PublicizeMedia',
     companyNote: "An IT company that customizes websites according to clients' needs.",
     period: '06/07/2019 - 03/20/2020',
     current: false,
